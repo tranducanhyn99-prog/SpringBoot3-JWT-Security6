@@ -93,26 +93,127 @@ bt tuan 5/
 ## ⚡ Hướng dẫn chạy và trải nghiệm
 
 ### 1. Khởi chạy ứng dụng
+
+#### Chạy với H2 Database (Mặc định, không cần cài CSDL)
+Dự án được cấu hình mặc định sử dụng H2 Database in-memory (`spring.profiles.active=h2`). Mở terminal tại thư mục dự án và chạy:
 ```bash
 mvn spring-boot:run
 ```
-Ứng dụng khởi động tại: `http://localhost:8005`
+- **Server chạy tại**: `http://localhost:8005`
+- **H2 Console**: `http://localhost:8005/h2-console` (JDBC URL: `jdbc:h2:mem:jwt_db`, User: `sa`, Password: để trống)
 
-### 2. Trải nghiệm trên Web Client (AJAX)
-1. Truy cập **Đăng ký tài khoản**: [http://localhost:8005/register](http://localhost:8005/register)
-2. Điền thông tin họ tên, email, mật khẩu $\rightarrow$ bấm **Đăng Ký**.
-3. Hệ thống chuyển sang **Trang Đăng nhập**: [http://localhost:8005/login](http://localhost:8005/login)
-4. Nhập email & mật khẩu vừa tạo $\rightarrow$ bấm **Login**.
-5. Đăng nhập thành công, bạn được chuyển đến [http://localhost:8005/user/profile](http://localhost:8005/user/profile):
-   - Hiển thị thông tin cá nhân lấy từ JWT Bearer token qua `/users/me`.
-   - Hiển thị bảng danh sách toàn bộ người dùng lấy từ `/users/`.
-6. Bấm **Đăng xuất (Logout)** để xóa token và kết thúc phiên làm việc.
+#### Chuyển sang Microsoft SQL Server
+Trong file `src/main/resources/application.properties`, đổi:
+```properties
+spring.profiles.active=sqlserver
+```
+Và kiểm tra thông số kết nối trong `src/main/resources/application-sqlserver.properties`.
 
-### 3. Kiểm thử với Postman (REST API)
-- **Đăng ký**: `POST http://localhost:8005/auth/signup`
-  - Body (raw JSON): `{"fullName": "Nguyen Van A", "email": "a@gmail.com", "password": "123456"}`
-- **Đăng nhập**: `POST http://localhost:8005/auth/login`
-  - Body (raw JSON): `{"email": "a@gmail.com", "password": "123456"}`
-  - Nhận về: `{"token": "...", "expiresIn": 3600000}`
-- **Gọi API bảo vệ**: `GET http://localhost:8005/users/me` hoặc `GET http://localhost:8005/users/`
-  - Header: `Authorization: Bearer <token_nhan_duoc>`
+---
+
+### 🔑 2. Tài khoản mẫu có sẵn (Khởi tạo tự động)
+Ứng dụng tích hợp sẵn `DataInitializer` tự động nạp 2 tài khoản test vào CSDL ngay khi khởi động:
+
+| Họ và tên | Email (Username) | Mật khẩu | Vai trò |
+| :--- | :--- | :---: | :--- |
+| **Quản trị viên** | `admin@gmail.com` | `123456` | Quản trị hệ thống |
+| **ThS. Nguyễn Hữu Trung** | `trungnh@hcmute.edu.vn` | `123456` | Giảng viên (chuẩn theo slide bài giảng) |
+
+> 💡 **Mẹo**: Tại trang đăng nhập (`/login`), có sẵn **hộp gợi ý tài khoản mẫu kèm nút "Điền"**. Bạn chỉ cần click để tự động điền nhanh mà không cần nhập tay.
+
+---
+
+### 🌐 3. Trải nghiệm trên Giao diện Web Client (AJAX)
+
+#### Bước 1: Đăng nhập
+1. Truy cập: [http://localhost:8005/login](http://localhost:8005/login)
+2. Bấm nút **"Điền"** cạnh tài khoản mẫu hoặc nhập Email & Password $\rightarrow$ Bấm **Login**.
+3. **Cơ chế hoạt động**:
+   - AJAX gửi request `POST /auth/login` lên server.
+   - Nhận chuỗi **Nimbus JWT Token** và lưu vào `localStorage.token`.
+   - Trình duyệt tự động chuyển hướng đến trang `/user/profile`.
+
+#### Bước 2: Xem thông tin cá nhân & Danh sách người dùng
+- Tại trang [http://localhost:8005/user/profile](http://localhost:8005/user/profile):
+  - AJAX tự động đọc token từ `localStorage`, đính kèm header `Authorization: Bearer <token>` gọi API `/users/me`.
+  - Hiển thị Avatar, Họ tên và Email người dùng.
+  - Tự động gọi API `/users/` kèm Bearer token để load và hiển thị bảng danh sách tất cả tài khoản trong hệ thống.
+
+#### Bước 3: Đăng ký tài khoản mới
+1. Truy cập [http://localhost:8005/register](http://localhost:8005/register) (hoặc bấm *"Đăng ký ngay"* ở trang login).
+2. Điền Họ tên, Email, Mật khẩu $\rightarrow$ Bấm **Đăng Ký**.
+3. Hệ thống gửi AJAX đến `/auth/signup`, thông báo thành công và chuyển về trang đăng nhập.
+4. Đăng nhập bằng tài khoản mới vừa tạo $\rightarrow$ Bạn sẽ thấy tài khoản xuất hiện ngay trong bảng danh sách user.
+
+#### Bước 4: Đăng xuất & Kiểm tra bảo mật
+1. Bấm nút **"Đăng xuất (Logout)"** $\rightarrow$ Token trong `localStorage` bị xóa sạch.
+2. Thử truy cập trực tiếp lại [http://localhost:8005/user/profile](http://localhost:8005/user/profile) $\rightarrow$ Hệ thống cảnh báo chưa đăng nhập và điều hướng ngay về `/login`.
+
+---
+
+### 🧪 4. Kiểm thử với Postman (REST API Chi tiết)
+
+#### a. Đăng nhập lấy Token (`POST /auth/login`)
+- **URL**: `http://localhost:8005/auth/login`
+- **Headers**: `Content-Type: application/json`
+- **Body** (raw JSON):
+  ```json
+  {
+    "email": "trungnh@hcmute.edu.vn",
+    "password": "123456"
+  }
+  ```
+- **Response** (HTTP 200 OK):
+  ```json
+  {
+    "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0cnVuZ25oQGhjbXV0ZS5lZHUudm4iLCJpc3MiOiJ2bi5pb3RzdGFyIiw...",
+    "expiresIn": 3600000
+  }
+  ```
+  *(Copy chuỗi token này để sử dụng cho các request sau)*.
+
+#### b. Truy cập Endpoint bảo vệ (`GET /users/me` & `GET /users/`)
+- **URL**: `http://localhost:8005/users/me` hoặc `http://localhost:8005/users/`
+- **Headers**:
+  - `Authorization`: `Bearer <chuỗi_token_vừa_copy>`
+- **Response** (HTTP 200 OK): Trả về thông tin cá nhân trích xuất từ Token context.
+
+#### c. Đăng ký tài khoản mới (`POST /auth/signup`)
+- **URL**: `http://localhost:8005/auth/signup`
+- **Headers**: `Content-Type: application/json`
+- **Body** (raw JSON):
+  ```json
+  {
+    "fullName": "Trần Đức Anh",
+    "email": "ducanh@gmail.com",
+    "password": "mypassword123"
+  }
+  ```
+
+#### d. Kiểm thử các trường hợp ngoại lệ bảo mật (GlobalExceptionHandler)
+- **Không gửi Token**: Gọi `GET /users/me` không có header Authorization $\rightarrow$ Nhận mã lỗi **`403 Forbidden`**.
+- **Token sai / chữ ký giả mạo**: Sửa 1 ký tự bất kỳ trong chuỗi token $\rightarrow$ Nhận mã lỗi **`401 Unauthorized`** kèm RFC 7807 ProblemDetail:
+  ```json
+  {
+    "status": 401,
+    "detail": "Invalid JWT signature",
+    "description": "The JWT signature is invalid"
+  }
+  ```
+- **Sai mật khẩu**: Gọi `POST /auth/login` với mật khẩu sai $\rightarrow$ Nhận mã lỗi **`401 Unauthorized`**:
+  ```json
+  {
+    "status": 401,
+    "detail": "Bad credentials",
+    "description": "The username or password is incorrect"
+  }
+  ```
+
+---
+
+### ⚡ 5. Chạy Kiểm thử tự động (Automated Test)
+Chạy bộ test tích hợp toàn diện trong 5 giây mà không cần mở trình duyệt:
+```bash
+mvn test
+```
+Toàn bộ kịch bản đăng ký $\rightarrow$ đăng nhập sinh Nimbus JWT $\rightarrow$ gọi API bảo vệ $\rightarrow$ chặn request không token sẽ được thực thi tự động đạt kết quả **BUILD SUCCESS**.
