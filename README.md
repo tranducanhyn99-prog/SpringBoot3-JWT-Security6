@@ -10,7 +10,7 @@ Bài tập thực hành Tuần 5 - Môn: **Lập Trình Web (WEBPR330479)** - GV
 - **Java**: 21 LTS
 - **Spring Boot**: 3.3.4
 - **Spring Security**: 6.x (Kiến trúc Stateless Session, SecurityFilterChain, OncePerRequestFilter)
-- **JJWT**: 0.12.6 (`jjwt-api`, `jjwt-impl`, `jjwt-jackson`)
+- **Thư viện JWT**: **Nimbus JOSE + JWT** (`com.nimbusds:nimbus-jose-jwt:9.40`)
 - **Spring Data JPA & Hibernate**
 - **Cơ sở dữ liệu**:
   - **H2 Database**: In-Memory (mặc định kích hoạt, chạy ngay không cần cài đặt)
